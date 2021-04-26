@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Apr 26 13:30:44 2021
-
-@author: aimeebryce
+@originally created by Gareth Williams for use of MATLAB to analyse FS-FLIM data
+@author: customised by aimeebryce 
 """
+# This code is used within MATLAB and has not been optimised for python. 
+# It is however displayed so the reader can understand how the .mat files are created from the spectral data.
+# From the data obtained here, the resulting .mat files are then processed and analysed using custom-written Python script
 # Section 1: To load .mat file and open hyperspectral for choosing decays
 ________________________________________________________________
 

@@ -1,0 +1,866 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr 26 13:30:44 2021
+
+@author: aimeebryce
+"""
+# Section 1: To load .mat file and open hyperspectral for choosing decays
+________________________________________________________________
+
+%% "Intensity Image" 
+figure
+frame_size_x =64;
+wholeImageBnd1=zeros(frame_size_x);
+wholeImageBnd2=zeros(frame_size_x);
+for bin = 7:13
+    
+    disp(bin)
+    spectral_bins_per_pixel_mesh = bins_array_3(:,bin,:);
+    spectral_bins_per_pixel_mesh_reshaped = reshape(spectral_bins_per_pixel_mesh,[512 frame_size_x frame_size_x]);
+    
+    for spectral_pixel = 1:150
+        spectral_bins_per_pixel_mesh_reshapedoneFrame = reshape(spectral_bins_per_pixel_mesh_reshaped(spectral_pixel,:,:), [frame_size_x frame_size_x]);
+        wholeImageBnd1 = wholeImageBnd1+spectral_bins_per_pixel_mesh_reshapedoneFrame;
+        
+    end
+    
+end
+ 
+for bin = 7:13
+    
+    disp(bin)
+    spectral_bins_per_pixel_mesh = bins_array_3(:,bin,:);
+    spectral_bins_per_pixel_mesh_reshaped = reshape(spectral_bins_per_pixel_mesh,[512 frame_size_x frame_size_x]);
+    
+    for spectral_pixel = 300:500
+        spectral_bins_per_pixel_mesh_reshapedoneFrame = reshape(spectral_bins_per_pixel_mesh_reshaped(spectral_pixel,:,:), [frame_size_x frame_size_x]);
+        wholeImageBnd2 = wholeImageBnd2+spectral_bins_per_pixel_mesh_reshapedoneFrame;
+        
+    end
+    
+end
+ 
+ 
+% 
+% wholeImageBnd1(wholeImageBnd1<100) =0;
+% wholeImageBnd2(wholeImageBnd2>1000) =0;
+figure
+imagesc(wholeImageBnd1);
+axis off
+%ti = get(gca,'TightInset')
+set(gcf, 'Units', 'Normalized', 'OuterPosition', [0.3, 0.3, 0.3, 0.50]);
+ti = [ 0 0 0 0.09 ];
+set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
+set(gca,'units','centimeters')
+pos = get(gca,'Position');
+%ti = get(gca,'TightInset');
+colorbar
+colormap(hot)
+% caxis([0 80000])
+set(gcf, 'PaperUnits','centimeters');
+set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+set(gcf, 'PaperPositionMode', 'manual');
+set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+%%
+figure
+surf(wholeImageBnd1);
+axis off
+%ti = get(gca,'TightInset')
+set(gcf, 'Units', 'Normalized', 'OuterPosition', [0.3, 0.3, 0.3, 0.50]);
+ti = [ 0 0 0 0.09 ];
+set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
+set(gca,'units','centimeters')
+pos = get(gca,'Position');
+%ti = get(gca,'TightInset');
+colorbar
+colormap(hot)
+% caxis([0 80000])
+set(gcf, 'PaperUnits','centimeters');
+set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+set(gcf, 'PaperPositionMode', 'manual');
+set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+shading interp 
+ 
+%colormap(hot);
+ 
+________________________________________________________________
+
+# Section 2: to obtain spectrum for the pixel by inputting X and Y coordinates
+________________________________________________________________
+%% Plot Spectrum for a pixel 
+spectral_bins_per_pixel = reshape(bins_array_3,[512,16,frame_size_x,frame_size_x]);
+pix_x = X inputted here;
+pix_y = Y inputted here;
+spectral_bins_per_pixel_pix_x_y = spectral_bins_per_pixel(:,:,pix_x,pix_y);
+%spectral_bins_per_pixel_pix_x_y = bins_array(:,:,64);
+bin = 13;
+spectral_bins_per_pixel_pix_x_y_bin = spectral_bins_per_pixel_pix_x_y(:,bin);
+figure;
+plot(movmean(spectral_bins_per_pixel_pix_x_y_bin,1))
+%xlim([0 200])
+%ylim([0 1000])
+% figure;
+% smoothedData = movmean(spectral_bins_per_pixel_pix_x_y_bin,5);
+% plot(smoothedData);
+ 
+ 
+%% Subtracted Spectrum
+spectral_bins_per_pixel = reshape(bins_array_3,[512,16,frame_size_x,frame_size_x]);
+pix_x = 220;
+pix_y = 147;
+backgroundBin = 1;
+ramanBin = 14;
+spectral_bins_per_pixel_pix_x_y = spectral_bins_per_pixel(:,:,pix_x,pix_y);
+ 
+background =  spectral_bins_per_pixel_pix_x_y(:,backgroundBin);
+spectral_bins_per_pixel_pix_x_y_bin = spectral_bins_per_pixel_pix_x_y(:,ramanBin);
+ 
+subtractedSpectra = spectral_bins_per_pixel_pix_x_y_bin-background;
+background =  spectral_bins_per_pixel_pix_x_y(:,backgroundBin);
+ 
+spectral_bins_per_pixel_pix_x_y_bin = spectral_bins_per_pixel_pix_x_y(:,ramanBin);
+subtractedSpectra2 = spectral_bins_per_pixel_pix_x_y_bin-background;
+ 
+spectral_bins_per_pixel_pix_x_y = spectral_bins_per_pixel(:,:,pix_x+4,pix_y+4);
+background =  spectral_bins_per_pixel_pix_x_y(:,backgroundBin);
+ 
+spectral_bins_per_pixel_pix_x_y_bin = spectral_bins_per_pixel_pix_x_y(:,ramanBin);
+subtractedSpectra3 = spectral_bins_per_pixel_pix_x_y_bin-background;
+ 
+ 
+figure;
+hold on
+plot(movmean(subtractedSpectra,1))
+plot(movmean(subtractedSpectra2,1))
+plot(movmean(subtractedSpectra3,1))
+xlim([0 200])
+hold off
+________________________________________________________________
+ 
+ 
+# Section 3: Using highest count spectral pixel to plot decays for the 2 sensor pixels
+________________________________________________________________
+
+%% Plot decay for 2 sensor pixels for the selected image pixel. 
+figure;
+sensorPixel = sensor pixel value inputted here;
+decay1 = spectral_bins_per_pixel_pix_x_y(sensorPixel,:);
+decay2 = spectral_bins_per_pixel_pix_x_y(sensorPixel+10,:);
+plot(decay1);
+hold;
+plot(decay2);
+
+________________________________________________________________
+
+# Section 4: Analysis for running lifetime calculations
+
+%%test analysis script
+%% SETUP PARAMETERS 
+% number of folders by name, before data starts, remember "." and ".."
+% this is for folders within the "HistMode_no_pixel_binning" folder
+% the folder selected in the popup should be one level above this folder.
+numberofNondataFolders = 3;
+ 
+%setnumberofrows/columns - to match data as recorded, this will effect the
+%number of files read in and the naming of output files
+numberofRows = 1; %this is the number of rows OR just change to the number of samples to analyse
+numberofColumns = 1;
+ 
+ 
+%Set name for output toplevel folder where data is saved
+ 
+analysisType = ‘Renamed for each experiment for intended output folder; 
+                                                            
+AlphaMask = 1; % set to 0 to plot with no Alpha masking applied 
+AlphaScalefactor = 2.5; % Scaling factor for alpha mask (contrast level)
+oneMinusAlpha = 0; %set to 1 for a 1-Alpha plot
+ 
+%scaling for Intensity normalisation, increase if needed (if using more
+%than 1 image in a single run)
+scalingFactorIntensity = 1.2;
+ 
+%set the wavelength range to look over (need to convert from wavelength 1 =
+%500 nm, 512 = 780 nm)
+firstSensorPixel = 1;
+lastSensorPixel = 512;
+numberOfwavelengthstoPlot = 10; % number of wavelengths to fit between 500 and 720nm, evenly spaced
+ 
+% set number of spectral pixels for moving sum, increase if mean Tau data noisy
+spectral_pixel_span = 64; 
+ 
+% set threshold for when lifetime is set to NaN, based on peak bin fitted
+count_threshold = 15;
+mask_threshold = count_threshold;
+ 
+% if you want to only want to create the lifetime data cubes:
+% numberOfwavelengthstoPlot = 512,firstSensorPixel = 1 ,lastSensorPixel =
+% 512 then set all the ploting / video options below to 0
+ 
+plotImages = 1; % set to 1 to plot and save lifetime images set to 0 to simply save data
+plotNormalisedImages = 0; % set to 1 to plot and save normalised lifetime images set to 0 to simply save data
+createVideo = 0; % set to 1 to create a video of the computed lifetime images with histograms
+videoQuality = 60; % set between 1 and 100 if output video too large
+frameRate=2; % 45-60 works well for full spectral
+ 
+%select 1st and last bin for fitting ALWAYS CHECK THESE LOOK GOOD FOR YOUR
+%DATA - USE 
+binToFit1 = Match this to x value half way up spectrum;
+binToFit2 = Match this to corresponding x value from highest peak on spectrum;
+ 
+%set hitmode
+histMode = 1;
+ 
+%parameters for plotting=
+bin = 2; % for alpha mask
+sample = 'AA1';
+ 
+lifetimeLow = 0.5; % for stained, 0.7,  1.5 for unstained/fresh, MHorrock 1
+lifetimeHigh = 2.5; % for stained, 1.7,  2.8 for unstained/fresh, MHorrrocks 2
+      
+ 
+% Load file path and find number of folders - 1 level deep to workspaces!!
+currentFolder = pwd;
+filePath = uigetdir;
+ 
+newFolderIntensity = [filePath, analysisType, '\Intensity'];
+mkdir(newFolderIntensity);
+newFolderIntesnityNormalised = [filePath, analysisType, '\Intensity\Normalised'];
+mkdir(newFolderIntensityNormalised);
+newFolderHistograms = [filePath, analysisType, '\Histograms'];
+mkdir(newFolderHistograms);
+newFolderMeanTau = [filePath, analysisType, '\Histograms\meanTau'];
+mkdir(newFolderMeanTau);
+newFolderLifetimeData = [filePath, analysisType, '\Lifetime_Data'];
+mkdir(newFolderLifetimeData);
+ 
+pixeldivider = round((lastSensorPixel-firstSensorPixel)/numberOfwavelengthstoPlot);
+lastSensorPixel = pixeldivider*numberOfwavelengthstoPlot;
+ 
+ 
+Wavelength = 0;
+for i = firstSensorPixel:pixeldivider:lastSensorPixel
+    Wavelength = Wavelength +1;
+    Wave  = round(i*0.5468 + 500);
+    
+    if plotImages == 1
+    newFolderLifetimeImages = [filePath, analysisType,  '\Lifetime_', num2str(Wave), 'nm'];
+    mkdir(newFolderLifetimeImages);
+    
+    newFolderHistogramsData = [filePath, analysisType, '\Histograms\', num2str(Wave),'nm'];
+    mkdir(newFolderHistogramsData);
+    end
+    
+    if plotNormalisedImages == 1
+    newFolderLifetimeImages = [filePath, analysisType,  '\LifetimeNormalised_', num2str(Wave), 'nm'];
+    mkdir(newFolderLifetimeImages);
+    end 
+ 
+ 
+end
+ 
+pause(0.1)
+ 
+all_files = dir([filePath, '\HistMode_no_pixel_binning\']);
+all_files = struct2table(all_files);
+all_files = sortrows(all_files, 'name');
+all_files = table2struct(all_files);
+ 
+ 
+ 
+%%
+%loop through images in date order, assumes the data was recorded in row by
+%row with the same starting point, data saved to the corresponding folder,
+%data workspaces must be only 1 level deap from the main folder
+allIntensityImages={};
+lifetimeImageData={};
+lifetimeAlphaData={};
+row = 0;
+ 
+for r = 1:numberofRows
+    row = row + 1;
+ 
+    colum = 0;
+    for k = 1:numberofColums
+        colum = colum + 1;
+        disp('row')
+        disp(row)
+        disp('column')
+        disp(colum)
+       
+        fileNumber = row+colum-1 + ((row-1)*(numberofColums-1))+numberofNondataFolders;
+        imageNumber = row+colum-1 + ((row-1)*(numberofColums-1));
+        %move to and load worspace from 1st subfolder
+        currDir = [filePath,'\HistMode_no_pixel_binning\', all_files(fileNumber).name];
+        cd(currDir)
+        disp('Loading workspace for folder:')
+        disp(all_files(fileNumber).name)
+        load('workspace.frame_1.mat')
+        %return to matlab scripts directory
+        cd(currentFolder)
+ 
+        
+        disp('Producing Intensity Image')
+ 
+        % Produce and save intensity images
+        [intensity_image] = Intensity_Image_Summation(bins_array_3, frame_size_x);
+        climit = 'auto';
+        plotter(intensity_image, newFolderIntesnity, row, colum, climit)
+        
+        allIntensityImages{row+colum-1 + ((row-1)*(numberofColums-1))} = intensity_image;
+               
+        %Calculate wavelength axis
+        [wavelengths,wavenumbers] = Wavelength_Calculator();
+        
+        disp('Performing Lifetime Calculations')
+        % do lifetime fit calculations
+        [parameters_cpu, selected_data_for_subtraction, bins_array_movsum_selected_reshaped] = test_LM_fitting_linear_gw(bins_array_3, histMode, spectral_pixel_span, binToFit1, binToFit2, frame_size_x);
+        
+        if plotImages == 1
+            disp('Producing Lifetime Images and Plots for wavelength:')
+        else
+            disp('Producing Datacubes')
+        end
+        % Produce lifetime plots and histograms for various wavelengths
+        
+        numberofbins = size(selected_data_for_subtraction(:,1),1);
+        selected_data_for_subtractionPeakbin = selected_data_for_subtraction(numberofbins,:);
+        mask = selected_data_for_subtractionPeakbin;
+        mask(mask<count_threshold)=0;
+        mask(mask>count_threshold)=1;
+        parameters_cpu(2,:) = parameters_cpu(2,:).*mask;
+        tauLeastSquaresCPU = parameters_cpu(2,:);
+        tauLeastSquaresCPU(tauLeastSquaresCPU>5)=0;
+        tauLeastSquaresReshaped = reshape(tauLeastSquaresCPU, [512 frame_size_x frame_size_x]);
+        AlphaDataAll = reshape(selected_data_for_subtractionPeakbin, [512 frame_size_x frame_size_x]);
+        
+        
+        wavelengthnumber = 0;
+        for i = firstSensorPixel:pixeldivider:lastSensorPixel
+            
+           
+            wavelengthnumber = wavelengthnumber+1;
+            spectral_pixel = i;
+            
+            if plotImages == 1
+            Currentwavelength = i*0.5468 + 500;
+            disp(Currentwavelength)
+            Lifetime_Image_Creation(spectral_pixel, bin, mask_threshold, sample, count_threshold, selected_data_for_subtraction, parameters_cpu, bins_array_movsum_selected_reshaped, wavelengths, lifetimeLow, lifetimeHigh, filePath, row, colum,analysisType, AlphaScalefactor, oneMinusAlpha, cmap, startingWavelength, frame_size_x);
+            end
+                
+            if plotImages == 0
+            tauLeastSquaresReshapedDisplayFrame = reshape(tauLeastSquaresReshaped(spectral_pixel,:,:),[frame_size_x frame_size_x]);
+            array_movsum_selected = reshape(bins_array_movsum_selected_reshaped, size(bins_array_movsum_selected_reshaped, 2), size(bins_array_movsum_selected_reshaped, 1), size(bins_array_movsum_selected_reshaped, 3));
+            bins_array_alpha = reshape(array_movsum_selected(spectral_pixel, bin, :),[frame_size_x frame_size_x]);
+            end
+ 
+        end
+            lifetimeImageData{imageNumber} = tauLeastSquaresReshaped;
+            lifetimeAlphaData{imageNumber} = AlphaDataAll;
+ 
+    end
+           
+ 
+ 
+end
+ 
+%% plot normalized intensity image - can be run independently if "allIntensityImages"
+% is loaded and and the parameter initialisation section of the script is
+% run
+if plotNormalisedImages == 1
+    AllnormalisationValue =[];
+    disp('Creating Normalised Intesnity Images');
+    row = 0; 
+    for l = 1:numberofRows
+        row = row + 1;
+        colum = 0;
+        for k = 1:numberofColums
+            colum = colum + 1;
+            imageNumber = row+colum-1 + ((row-1)*(numberofColums-1));
+            ImagetoData =allIntensityImages{imageNumber};
+            normalisationValue= max(max(ImagetoData));
+            AllnormalisationValue(imageNumber) = normalisationValue;
+        end
+    end
+    overallNormalisationValue = max(AllnormalisationValue);
+    overallNormalisationValue = overallNormalisationValue/scalingFactorIntensity;
+    row = 0; 
+    for l = 1:numberofRows
+        row = row + 1;
+        colum = 0;
+        for k = 1:numberofColums
+            colum = colum + 1;
+            imageNumber = row+colum-1 + ((row-1)*(numberofColums-1));
+            ImagetoPlot =allIntensityImages{imageNumber};
+            IntensityImagesNormalised=ImagetoPlot/overallNormalisationValue;
+            AllIntensityImagesNormalised{imageNumber}= IntensityImagesNormalised;
+            climit = [0 1];
+            plotter(IntensityImagesNormalised, newFolderIntesnityNormalised, row, colum, climit);
+        end
+    end
+ 
+    save([newFolderIntesnityNormalised,'\AllIntensityData.mat'],'allIntensityImages')
+    save([newFolderIntesnityNormalised,'\AllIntensityImagesNormalised.mat'],'AllIntensityImagesNormalised')
+    else
+end
+%% Plot global normalized Alpha Lifetime plots, - can be run independently
+% if "LifetimeAlphaData"  and "LifetimeImageData" are loaded  along
+% with runing the  initialiation section of the script
+ 
+if plotNormalisedImages == 1
+    disp('Creating Normalised Lifetime Images');
+    NormalisedAlphaData=[];
+    for z = 1:Wavelength
+        row = 0;
+        for l = 1:numberofRows
+            row = row + 1;
+            colum = 0;
+ 
+            for k = 1:numberofColums
+                colum = colum + 1;
+                imageNumber = row+colum-1 + ((row-1)*(numberofColums-1));
+                imageAlphaData = lifetimeAlphaData{imageNumber};
+                AlphaDataWavelength =imageAlphaData(z,:,:);
+                normalisationValue= max(max(AlphaDataWavelength));
+                NormalisedAlphaData(z,imageNumber) = normalisationValue;
+            end
+        end
+    end
+ 
+        a=0;
+    for z = firstSensorPixel:pixeldivider:lastSensorPixel
+        row = 0;
+        a=a+1;
+        CurrentWavelength = round(z*0.5468 + 500);
+        OverallNormalisedAlphaFactor = max(NormalisedAlphaData(a,:));
+        for l = 1:numberofRows
+            row = row + 1;
+            colum = 0;
+ 
+            for k = 1:numberofColums
+                colum = colum + 1;
+                imageNumber = row+colum-1 + ((row-1)*(numberofColums-1));
+                ImageData =lifetimeImageData{imageNumber};
+                AlphaData = lifetimeAlphaData{imageNumber};
+                ImagetoPlot = squeeze(ImageData(a, : , :));
+ 
+                if oneMinusAlpha == 1
+                AlphaData = squeeze(AlphaData(a,:,:));
+                AlphatoPlot = AlphaScalefactor*(1-(AlphaData/OverallNormalisedAlphaFactor));
+                folder = [filePath,analysisType, '\LifetimeNormalised_', num2str(CurrentWavelength),'nm','\r', num2str(row),'_c', num2str(colum), '_Lifetime ', num2str(CurrentWavelength),'nm.tif'];
+                lifetimeplotter(ImagetoPlot, folder, AlphatoPlot, lifetimeLow, lifetimeHigh)
+                else
+                AlphaData = squeeze(AlphaData(a,:,:));
+                AlphatoPlot = AlphaScalefactor*squeeze(AlphaData)/OverallNormalisedAlphaFactor;
+                folder = [filePath,analysisType, '\LifetimeNormalised_', num2str(CurrentWavelength),'nm','\r', num2str(row),'_c', num2str(colum), '_Lifetime ', num2str(CurrentWavelength),'nm.tif'];
+                lifetimeplotter(ImagetoPlot, folder, AlphatoPlot, lifetimeLow, lifetimeHigh)
+                end
+            end
+        end
+    end
+    else
+end
+ 
+%% Create Video 
+% can run if "LifetimeAlphaData"  and "LifetimeImageData" are loaded  along
+% with runing the  initialiation section of the script
+ 
+   
+if createVideo ==1
+    disp('Creating Video');
+    load cmap
+    % setup a video file to populate
+    filename = fullfile(newFolderLifetimeData, '\processed_video_modifiedcolors1.avi');
+    compressedVideo = VideoWriter(filename);
+    %set the final video frame rate
+    compressedVideo.FrameRate = frameRate;
+    compressedVideo.Quality = videoQuality;
+ 
+    % open the video file ready to start adding frames
+    open(compressedVideo);
+ 
+    NormalisedAlphaData=[];
+    for z = firstSensorPixel:pixeldivider:lastSensorPixel
+        row = 0;
+        for l = 1:numberofRows
+            row = row + 1;
+            colum = 0;
+ 
+            for k = 1:numberofColums
+                colum = colum + 1;
+                imageNumber = row+colum-1 + ((row-1)*(numberofColums-1));
+                imageAlphaData = lifetimeAlphaData{imageNumber};
+                AlphaDataWavelength =imageAlphaData(z,:,:);
+                normalisationValue= max(max(AlphaDataWavelength));
+                NormalisedAlphaData(z,imageNumber) = normalisationValue;
+            end
+        end
+    end
+ 
+        a=0;
+    for z = firstSensorPixel:pixeldivider:lastSensorPixel
+        row = 0;
+        a=a+1;
+        
+        CurrentWavelength = round(z*0.5468 + 500);
+        OverallNormalisedAlphaFactor = max(NormalisedAlphaData(z,:));
+        for l = 1:numberofRows
+            row = row + 1;
+            colum = 0;
+ 
+            for k = 1:numberofColums
+                colum = colum + 1;
+                imageNumber = row+colum-1 + ((row-1)*(numberofColums-1));
+                ImageData =lifetimeImageData{imageNumber};
+                ImagetoPlot =squeeze(ImageData(z,:,:));
+                AlphaData = lifetimeAlphaData{imageNumber};
+ 
+                if oneMinusAlpha == 1
+                AlphaData = squeeze(AlphaData(z,:,:));
+                AlphatoPlot = AlphaScalefactor*(1-(AlphaData/OverallNormalisedAlphaFactor));
+                [compressedVideo] =  lifetimeplotter_video(ImagetoPlot,  AlphatoPlot, lifetimeLow, lifetimeHigh, compressedVideo,CurrentWavelength, bins_array_movsum_selected_reshaped, bin, mask_threshold, z, cmap);
+                else
+                AlphaData = squeeze(AlphaData(z,:,:));
+                AlphatoPlot = AlphaScalefactor*AlphaData/max(max(AlphaData));
+                [compressedVideo] =  lifetimeplotter_video(ImagetoPlot,  AlphatoPlot, lifetimeLow, lifetimeHigh, compressedVideo,CurrentWavelength, bins_array_movsum_selected_reshaped, bin, mask_threshold, z, cmap);
+                end
+            end
+        end
+    end
+    %close the video file
+    close(compressedVideo);
+    else
+end
+ 
+%
+% Impllement saving in non cell format?
+% lifetimeImageDatatoSave = cell2mat(lifetimeImageData);
+% lifetimeImageDatatoSave = permute(reshape(lifetimeImageData,[frame_size_x, numberOfwavelengthstoPlot, frame_size_x]),[2 1 3]);
+% lifetimeAlphaDatatoSave = cell2mat(lifetimeAlphaData);
+% lifetimeAlphaDatatoSave = permute(reshape(lifetimeAlphaData,[frame_size_x, numberOfwavelengthstoPlot, frame_size_x]),[2 1 3]);
+disp('Saving Datacubes');
+save([newFolderLifetimeData,'\LifetimeImageData.mat'],'lifetimeImageData')
+save([newFolderLifetimeData,'\LifetimeAlphaData.mat'],'lifetimeAlphaData')
+ 
+%% create Meta Data File
+xgalvo_step_size = 35;
+firstWavelength = 0.5468*firstSensorPixel + 500;
+lastWavelength = 0.5468*lastSensorPixel + 500;
+AnalysedfolderName = split(filePath,"\");
+metaDataFolderName = strcat('\metaData_', string(AnalysedfolderName(2)), '.csv');
+metaData = {};
+metaData{1}  = ["Folder Analysed " ,  filePath];
+metaData{2}  = ["Hist mode " ,  num2str(HIST_MODE)];
+metaData{3}  = ["Pstop" , num2str(CODE_PSTOP)];
+metaData{4}  = ["Frame Size " , num2str(frame_size_x)];
+metaData{5}  = ["Step Size " , num2str(xgalvo_step_size)];
+metaData{6}  = ["Exposure Time " , num2str(exposure_time_us)];
+metaData{7}  = ["Bin1 for Fitting" , num2str(binToFit1)];
+metaData{8}  = ["Bin2 for Fitting " , num2str(binToFit2)];
+metaData{9}  = ["Alpha Mask Enabled " , num2str(AlphaMask)];
+metaData{10} = ["Alpha Scale Factor " , num2str(AlphaScalefactor)];
+metaData{11} = ["1-Alpha Enabled " , num2str(oneMinusAlpha)];
+metaData{12} = ["Count Threashold " , num2str(count_threshold)];
+metaData{13} = ["Number of Wavelengths Analysed " , num2str(numberOfwavelengthstoPlot)];
+metaData{14} = ["Starting Wavelength " , num2str(firstWavelength)];
+metaData{15} = ["Last Wavelength " , num2str(lastWavelength)];
+metaData{16} = ["Short Lifetime for Plots " , num2str(lifetimeLow)];
+metaData{17} = ["Long Lifetime for Plots " , num2str(lifetimeHigh)];
+metaData{18} = ["Vidio Frame Rate " , num2str(frameRate)];
+metaData{19} = ["Vidio Compression (%) " , num2str(videoQuality)];
+metaData{19} = ["Moving Average Size " , num2str(spectral_pixel_span)];
+metaData = splitvars(cell2table(metaData'));
+metaData.Properties.VariableNames = {'Variable' 'Value'};
+writetable(metaData,strcat(filePath, analysisType , metaDataFolderName));
+ 
+pause (1);
+%clear all
+ 
+3.       Analysis script actually recalls a couple of others to do “things”, and so:
+A – Lifetime Image Creation
+ 
+function Lifetime_Image_Creation(spectral_pixel, bin, mask_threshold, sample, count_threshold, selected_data_for_subtraction, parameters_cpu, bins_array_movsum_selected_reshaped, wavelengths, lifetimeLow, lifetimeHigh, filePath, row, colum, analysisType, AlphaScalefactor, oneMinusAlpha, frame_size_x)
+ 
+    CurrentWavelength = round(spectral_pixel*0.5468 + 500);
+ 
+ 
+%     % remove lifetime data with too few counts by threashold on peak bin
+%     numberofbins = size(selected_data_for_subtraction(:,1),1);
+%     selected_data_for_subtractionPeakbin = selected_data_for_subtraction(numberofbins,:);
+%     binRatioforSubtraction = selected_data_for_subtractionPeakbin;
+%     binRatioforSubtraction(binRatioforSubtraction<count_threshold)=0;
+%     binRatioforSubtraction(binRatioforSubtraction>0)=1;
+%     parameters_cpu(2,:) = parameters_cpu(2,:).*binRatioforSubtraction;
+    
+  
+    % create mask
+    array_movsum_selected = reshape(bins_array_movsum_selected_reshaped, size(bins_array_movsum_selected_reshaped, 2), size(bins_array_movsum_selected_reshaped, 1), size(bins_array_movsum_selected_reshaped, 3));
+    bins_array_reshaped_one_frame = reshape(array_movsum_selected(spectral_pixel, bin, :,:),[frame_size_x frame_size_x]);
+    mask = (bins_array_reshaped_one_frame > mask_threshold);
+    
+    % Plot lifetime image
+    convSize = 3;
+    
+%     
+%     
+%     tauLeastSquaresCPU = parameters_cpu(2,:)';
+%     tauLeastSquaresCPU(tauLeastSquaresCPU==0)=NaN; %%% CHANGE THIS BACK TO "==0" !!!!!!
+% 
+% 
+%     tauLeastSquaresReshaped = reshape(tauLeastSquaresCPU, [512 256 256]);
+ 
+        numberofbins = size(selected_data_for_subtraction(:,1),1);
+        selected_data_for_subtractionPeakbin = selected_data_for_subtraction(numberofbins,:);
+        mask = selected_data_for_subtractionPeakbin;
+        mask(mask<count_threshold)=0;
+        mask(mask>count_threshold)=1;
+        parameters_cpu(2,:) = parameters_cpu(2,:).*mask;
+        tauLeastSquaresCPU = parameters_cpu(2,:);
+        tauLeastSquaresCPU(tauLeastSquaresCPU>4)=0;
+        tauLeastSquaresCPU(tauLeastSquaresCPU==0)=NaN;
+        tauLeastSquaresReshaped = reshape(tauLeastSquaresCPU, [512 frame_size_x frame_size_x]);
+    
+    bins_array_alpha = selected_data_for_subtractionPeakbin;
+    bins_array_alpha = reshape(bins_array_alpha, [512 frame_size_x frame_size_x]);
+    bins_array_alphaPixel = squeeze(bins_array_alpha(spectral_pixel, :,:));
+    
+    close all
+    tauLeastSquaresReshapedDisplayFrame = reshape(tauLeastSquaresReshaped(spectral_pixel,:,:),[frame_size_x frame_size_x]);
+    image_masked = tauLeastSquaresReshapedDisplayFrame;
+    %image_masked(~mask) = double(0);
+    histogram(image_masked, 1000)
+    %xlim([lifetimeLow lifetimeHigh+1])
+    %ylim([0 1000])
+    xlabel('Lifetime (ns)')
+    ylabel('Counts')
+    caption = sprintf('%s %s=%.2fnm',sample,'\lambda',wavelengths(spectral_pixel));
+    title(caption);
+    set(gcf,'color','w');
+    imagewd = getframe(gcf); 
+    imwrite(imagewd.cdata, [filePath,analysisType, '\Histograms\', num2str(CurrentWavelength),'nm','\r', num2str(row),'_c', num2str(colum), '_Histogram.tif']);
+    savefig([filePath,analysisType,  '\Histograms\', num2str(CurrentWavelength),'nm','\r', num2str(row),'_c', num2str(colum), '_Histogram.fig']);
+    save([filePath, analysisType, '\Histograms\', num2str(CurrentWavelength),'nm','\r', num2str(row),'_c', num2str(colum), '_Histogram.mat'],'image_masked')
+    close(gcf);
+ 
+    figure
+    tauLeastSquaresReshapedDisplayFrame(tauLeastSquaresReshapedDisplayFrame>4) = 0;
+    
+    if oneMinusAlpha == 1
+    bins_array_alpha_normalised = AlphaScalefactor*(1-bins_array_alphaPixel/max(max(bins_array_alphaPixel)));
+    % try scaling / 1-alpha
+    else
+        bins_array_alpha_normalised = AlphaScalefactor*bins_array_alphaPixel/max(max(bins_array_alphaPixel));
+    end
+ 
+    imagesc(tauLeastSquaresReshapedDisplayFrame, 'AlphaData', bins_array_alpha_normalised);
+    colormap(jet);
+    set(gca,'Color','k')
+ 
+    set(gcf, 'Units', 'Normalized', 'OuterPosition', [0.3, 0.3, 0.3, 0.50]);
+    ti = [ 0 0 0 0.09 ];
+    set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
+    set(gca,'units','centimeters')
+    pos = get(gca,'Position');
+ 
+ 
+    set(gcf, 'PaperUnits','centimeters');
+    set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+    set(gcf, 'PaperPositionMode', 'manual');
+    set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+    set(gcf,'color','w');
+    caxis([lifetimeLow lifetimeHigh])
+    imagewd = getframe(gcf); 
+    imwrite(imagewd.cdata, [filePath,analysisType, '\Lifetime_', num2str(CurrentWavelength),'nm','\r', num2str(row),'_c', num2str(colum), '_Lifetime ', num2str(CurrentWavelength),'nm.tif']);
+    
+    close(gcf);
+    figure
+    imagesc(bins_array_alpha_normalised');
+    title('Normalised');
+    close(gcf);
+    figure
+    imagesc(image_masked)
+    colorbar
+    caxis([lifetimeLow lifetimeHigh])
+    xlabel('Column')
+    ylabel('Row')
+    caption = sprintf('%s %s=%.2fnm',sample,'\lambda',wavelengths(spectral_pixel));
+    title(caption);
+    set(gcf,'color','w');
+    close(gcf);
+    figure
+    % Compute image moving average using convolution
+    B = ones(convSize,convSize)/convSize^2;
+    C = conv2(image_masked,B,'same');
+    imagesc(C)
+    colorbar
+    caxis([lifetimeLow lifetimeHigh])
+ 
+    % Plot mean lifetimes vs wavelength
+    meanTauLeastSquaresVsWavelength = [];
+    stdTauLeastSquaresVsWavelength = [];
+    tauLeastSquaresReshaped = reshape(tauLeastSquaresCPU, [512 frame_size_x*frame_size_x]);
+    
+    for spectralPixel = 1:1:512
+        spectralPixel;
+        meanTauLeastSquares = nanmean(abs(tauLeastSquaresReshaped(spectralPixel,:,:)));
+        stdDevTauLeastSquares = nanstd(abs(tauLeastSquaresReshaped(spectralPixel,:,:)));
+        meanTauLeastSquaresVsWavelength = [meanTauLeastSquaresVsWavelength meanTauLeastSquares];
+        stdTauLeastSquaresVsWavelength = [stdTauLeastSquaresVsWavelength stdDevTauLeastSquares];
+    end
+    
+    close(gcf);
+    
+    figure
+    plot(wavelengths,meanTauLeastSquaresVsWavelength)
+    hold on
+    meanPlusStdVsWavelength = meanTauLeastSquaresVsWavelength + stdTauLeastSquaresVsWavelength;
+    meanMinusStdVsWavelength = meanTauLeastSquaresVsWavelength - stdTauLeastSquaresVsWavelength;
+    plot(wavelengths,meanPlusStdVsWavelength)
+    plot(wavelengths,meanMinusStdVsWavelength)
+    legend('Mean', 'Mean + Std', 'Mean - Std')
+    xlabel('Wavelength (nm)')
+    ylabel('tau mean')
+    title(sample)
+    ylim([0 5])
+    set(gcf,'color','w');
+    imagewd = getframe(gcf); 
+    imwrite(imagewd.cdata, [filePath,analysisType, '\Histograms\meanTau\r', num2str(row),'_c', num2str(colum),'_MeanTau.tif']);
+    savefig([filePath,analysisType, '\Histograms\meanTau\r', num2str(row),'_c', num2str(colum),'_MeanTau.fig']);
+    close(gcf);
+    
+end
+ 
+B – Intensity Image Summation (from 2 bands to 1 band)
+function [wholeImage] = Intensity_Image_Summation(array, frame_size_x)
+%Calculation of summed intensity image
+%   Detailed explanation goes here
+ 
+wholeImage=zeros(frame_size_x);
+for bin = 1:13
+    
+    %disp(bin)
+    spectral_bins_per_pixel_mesh = array(:,bin,:);
+    spectral_bins_per_pixel_mesh_reshaped = reshape(spectral_bins_per_pixel_mesh,[512 frame_size_x frame_size_x]);
+    
+    for spectral_pixel = 1:400
+        spectral_bins_per_pixel_mesh_reshapedoneFrame = reshape(spectral_bins_per_pixel_mesh_reshaped(spectral_pixel,:,:), [frame_size_x frame_size_x]);
+        wholeImage = wholeImage+spectral_bins_per_pixel_mesh_reshapedoneFrame;
+        
+    end
+    
+end
+ 
+ 
+end
+ 
+ 
+C- Lifetime fitting
+ 
+function [parameters_cpu, selected_data_for_subtraction, bins_array_movsum_selected_reshaped] = test_LM_fitting_linear_gw(bins_array_3, histMode, spectral_pixel_span, binToFit1, binToFit2, frame_size_x)
+%% prepare data
+if exist('bins_array_3','var') ~= 1
+    load("../workspace.frame_1.mat", "bins_array_3");
+end
+ 
+%clearvars -except bins_array_3;
+ 
+% fit model is 1 for the test of exponential decay fitting, otherwise for linear fitting
+fit_model = 1;
+ 
+ 
+binWidth = ((50*(2^histMode))*2)/1000;
+ 
+selected_bins = binToFit1:binToFit2;  % bin 12 - 13 for stained samples
+%timeBins = [0.8 1.6 2.4 3.2 4.0 4.8 5.6]';
+timeBins = linspace(0, size(selected_bins, 2) - 1, size(selected_bins, 2))*binWidth;
+timeBins2 = [ones(length(timeBins),1) timeBins'];
+ 
+ 
+%disp('Reshaping bins');
+bin_16_array = bins_array_3(:,16,:,:);
+bin_16_array = reshape(bin_16_array, 512, frame_size_x*frame_size_x);
+bin_16_array_mean = mean(bin_16_array, 2);
+ 
+%clear bin_16_array;
+ 
+%disp('Getting selected bins for background');
+bins_array_selected = reshape(bins_array_3, 512, 16, frame_size_x*frame_size_x);
+bins_array_selected = bins_array_selected(:, selected_bins, :);
+ 
+% Subtract background
+for j = 1:size(bins_array_selected, 3)
+    for i = 1:size(bins_array_selected, 2)
+        bins_array_selected(:,i,j) = bins_array_selected(:,i,j)-bin_16_array_mean;
+        % Try improved mean estimate
+        %bins_array_selected(:,i,j) = bins_array_selected(:,i,j)-improvedBin16Mean;
+    end
+end
+ 
+%disp('Getting movmean');
+array_movmean_selected = movsum(bins_array_selected,spectral_pixel_span,1);
+ 
+%clear bins_array_selected;
+ 
+confocal_pixel_size = size(array_movmean_selected, 3);
+confocal_pixel_column_size = sqrt(confocal_pixel_size);
+confocal_pixel_row_size = (sqrt(confocal_pixel_size));
+bin_size = size(array_movmean_selected, 2);
+spectral_pixel_size = size(array_movmean_selected, 1);
+%bins_array_movsum_selected_reshaped = reshape(array_movsum_selected, [bin_size, spectral_pixel_size, confocal_pixel_row_size, confocal_pixel_column_size]);
+%disp('Rearrange array');
+% rearrange the array every time one column is extracted for processing
+bins_array_movsum_selected_reshaped = zeros(bin_size, spectral_pixel_size, confocal_pixel_size);
+for i = 1:confocal_pixel_size
+    bins_array_movsum_selected_reshaped(:,:,i) = array_movmean_selected(:,:,i)';
+end
+ 
+%clear array_movmean_selected;
+ 
+%% start fitting
+selected_data_for_fitting = reshape(bins_array_movsum_selected_reshaped, ...
+    size(bins_array_movsum_selected_reshaped, 1),...
+    size(bins_array_movsum_selected_reshaped, 2)*size(bins_array_movsum_selected_reshaped, 3));
+selected_data_for_subtraction = selected_data_for_fitting;
+%clear bins_array_movsum_selected_reshaped;
+ 
+% spectral_pixel =200;
+% selected_data_for_fitting = bins_array_movsum_selected_reshaped(:,spectral_pixel, :);
+% selected_data_for_fitting = reshape(selected_data_for_fitting, size(bins_array_movsum_selected_reshaped, 1), ...
+%     size(bins_array_movsum_selected_reshaped, 3));
+%selected_data_for_fitting(selected_data_for_fitting <10) = 1000000;
+selected_data_for_fitting = log(selected_data_for_fitting);
+selected_data_for_fitting = real(selected_data_for_fitting);
+ 
+%disp('Cpufit linear 1D fitting');
+[parameters_cpu, states_cpu, number_iterations_cpu, execution_time_cpu] = ...
+    LM_fitting(selected_data_for_fitting, binWidth, ModelID.LINEAR_1D, 0);
+parameters_cpu(2,:) = 1 ./ parameters_cpu(2,:);
+disp("fitting complete - execution time: " + execution_time_cpu + " seconds");
+ 
+ 
+ 
+% [parameters_gpu, states_gpu, number_iterations_gpu, execution_time_gpu] = ...
+%     LM_fitting(selected_data_for_fitting, binWidth, ModelID.LINEAR_1D, 1);
+% parameters_gpu(2,:) = 1 ./ parameters_gpu(2,:);
+% disp("execution_time_gpu: " + execution_time_gpu + " seconds");
+% 
+% tic;
+% disp('Least squares lifetime fitting');
+% parameters_old_cpu = zeros(2, size(selected_data_for_fitting, 2));
+% for i = 1: size(selected_data_for_fitting, 2)
+%     selectedBinsForWavelengthAndConfocalPixel = selected_data_for_fitting(:, i);
+%     fit = timeBins2\selectedBinsForWavelengthAndConfocalPixel;
+%     parameters_old_cpu(:,i) = [fit(1) real(1/fit(2))];
+% end
+% execution_time_old_cpu = toc;
+% disp("execution_time_old_cpu: " + execution_time_old_cpu + " seconds");
+% 
+% tic;
+% binArrays_subset = reshape(bins_array_3, size(bins_array_3, 1), size(bins_array_3, 2), ...
+%     size(bins_array_3, 3)*size(bins_array_3, 4));
+% parameters_old_gpu = lifetime_leastsquare_gpu(binArrays_subset);
+% execution_time_old_gpu = toc;
+% disp("execution_time_old_gpu: " + execution_time_old_gpu + " seconds");
+end
+___________________________________________________________________
+ 

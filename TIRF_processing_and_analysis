@@ -15,12 +15,13 @@ from skimage.filters import threshold_otsu
 from scipy import ndimage
 
 
-#  Path to the images that will be analysed. 
+#  Path to the images that will be analysed. Path is altered depending on the condition being looked at. 
 path=r"/Volumes/aimee_hd/UBQLN2_TIRF_imaging_LLPS/final/time_changes/60_mins/"   
 path_2=r"/Volumes/aimee_hd/UBQLN2_TIRF_imaging_LLPS/final/time_changes/"
 
-# Code will run on all files that have this in the name
-# Filename and name are altered depending on the condition being looked at
+# Code will run on all files in the folder that have this in the name.
+# Filename and name are altered depending on the condition being looked at.
+# n = 3
 filename_contains="60"
 
 name = '60 min'
@@ -91,17 +92,16 @@ for root, dirs, files in os.walk(path):
              plt.show()
              
              
-             # Gaussian subtraction = helps with uneven illumination 
+             # Gaussian subtraction = for improving uneven illumination 
              # original image - gaussian filter  = subtracted image
              bgrd_sub = (image - blurred_image)
              plt.imshow(bgrd_sub)
              plt.title("Image after Gaussian subtraction")
-             #plt.savefig(path + name + 'Filtered Image.tif')
+             plt.savefig(path + name + 'Filtered Image.tif')
              plt.show()
              
          
-             ## Thresholding using otsu
-             
+             ## Thresholding using Otsu
              threshold=filters.threshold_otsu(bgrd_sub)
              filtered = bgrd_sub > threshold    # Apply the threshold to the image. 
              plt.imshow(filtered)
@@ -139,7 +139,7 @@ for root, dirs, files in os.walk(path):
              df['max_intensity']=(df['max_intensity'])
              df1 = df
              print(df1)
-             # Saves dataframe to csv file to be opened in excel 
+             # Saves dataframe to csv file to be opened in excel and assessed with swarm plots / circularity etc. 
              df.to_csv(path+'/tables/'+ name +'_table_of_data.csv',sep = ',',index = False,header=True)
             
              
@@ -164,8 +164,13 @@ for root, dirs, files in os.walk(path):
              table_2_list = list(table_2)
              print(table_2_list)
              
-             # saves 2nd csv file with the mean area, intensity and max intensity and circularity 
-             df2 = pd.DataFrame([table_2_list], columns = ['mean_area', 'mean_length', 'mean_intensity', 'number_of_clusters', 'mean major axis length', 'mean minor axis length'])
+             # saves 2nd csv file with the mean area, intensity and max intensity and circularity. 
+             df2 = pd.DataFrame([table_2_list], columns = ['mean_area', 
+                                                           'mean_length', 
+                                                           'mean_intensity', 
+                                                           'number_of_clusters', 
+                                                           'mean major axis length', 
+                                                           'mean minor axis length'])
              
              
              df2.to_csv(path +'/mean_tables/'+ name + '_area_lengths_and_intensities_circularity.csv', sep=',', index=False, header=True)
@@ -175,13 +180,13 @@ for root, dirs, files in os.walk(path):
              lengths = list(df1.major_axis_length)
              intensities = list(df1.mean_intensity)
              
-             # Plotting histograms - these were not displayed in the thesis but were plotted for immediate visualisation. 
+             # Plotting histograms - not displayed in the thesis but plotted for immediate visualisation. 
              plt.hist(areas, bins = 50, rwidth=0.8,color='#607c8e') 
              plt.xlabel('Area ($μm^2$)')
              plt.ylabel('Number of Features')
              plt.xlim([0,120])
              plt.title('Area of features '+ name)
-             plt.savefig(path+'+ name +'Areas.tif') #this line saves the histogram image as a pdf in the folder the image was taken from. 
+             plt.savefig(path+'+ name +'Areas.tif') 
              plt.show()
            
              plt.hist(lengths, bins = 50, rwidth=0.8,color='#607c8e') 

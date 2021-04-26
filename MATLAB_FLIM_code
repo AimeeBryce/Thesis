@@ -7,13 +7,13 @@ Created on Mon Apr 26 13:30:44 2021
 """
 # This code is used within MATLAB and has not been optimised for python. 
 # It is however displayed so the reader can understand how the .mat files are created from the spectral data.
-# From the data obtained here, the resulting .mat files are then processed and analysed using custom-written Python script
+# From the data obtained here, the resulting output .mat 256x256x512 data cubes are then processed and analysed using custom-written Python script for intensity and lifetime calculations.
 # Section 1: To load .mat file and open hyperspectral for choosing decays
 ________________________________________________________________
 
 %% "Intensity Image" 
 figure
-frame_size_x =64;
+frame_size_x =256;
 wholeImageBnd1=zeros(frame_size_x);
 wholeImageBnd2=zeros(frame_size_x);
 for bin = 7:13

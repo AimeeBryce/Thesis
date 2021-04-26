@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial import distance
 from scipy import ndimage
 
-# Read the files 
+# Read the files - example used here is 125 mM salt 
 
 mat_fname=r"/Volumes/aimee_hd/FS_FLIM_imaging/salt_conc/salt_conc_change/50nM_NR_125mM_salt_1/Lifetime_Data/LifetimeImageData.mat"
 mat_contents = sio.loadmat(mat_fname,squeeze_me=True)
@@ -23,21 +23,21 @@ mat_contents2 = sio.loadmat(mat_fname,squeeze_me=True)
 intensities=mat_contents2['lifetimeAlphaData']
 
 # This is path for where all the files and images will save to 
+# Path and name edited for each of the different FS-FLIM data files. 
 
 path = '/Volumes/aimee_hd/FS_FLIM_imaging/salt_conc/salt_conc_change/'
-name = '125 mM_salt_2'
+name = '125 mM_salt_1'
 
 def see(number):
     plane=lifetimes[number]
     plt.imshow(plane)
 
-# Plots sum of the FL intensity over pixel number 1-390
+# Plots sum of the FL intensity over pixel number 
 sum_int=np.sum(intensities[1:512],axis=0)
 plt.imshow(sum_int, cmap = 'nipy_spectral')
 plt.clim(0, 5e6)
 plt.colorbar()
-plt.title('Summed Intensity Plot at 500mM salt')
-#plt.savefig(path + name + ' Summed Intensity Image.tif')
+plt.title('Summed Intensity Plot at 125mM salt')
 plt.show()
 
 # Correcting for uneven illumination using Gaussian filter
@@ -71,7 +71,7 @@ c=460
 # np.argmax = indices of the maximum values along an axis - as axis=0 represents rows (axis=1 would represent columns).
 max_life=(np.argmax(thresholded_lifetimes,axis=0)*m+c)*binary_im
 
-## From above image - determine vmin and v max and then replot 
+## Plots the maximum wavelength of droplets in each pixel point
 plt.imshow(max_life,cmap='rainbow',vmin=0,vmax=800)
 plt.colorbar()
 plt.title('Maximum Wavelength of Droplets in Each Pixel Plot')
@@ -117,7 +117,7 @@ for num in range(1,number_of_clusters):
     image_dist_clust=image_dist*image_to_show
 
 
-    ## This number (0.6 etc, was previously at 0.77) can be edited to get the out edges of the droplet further out/in 
+    
     # This is the threshold that determines whether the pixel is in the periphery or the centre. 
     length=0.80*(lengths[num-1]/2)
 
@@ -139,13 +139,13 @@ axes[1].set_title("Centre")
 plt.show()
 
 
-#Obtaining average lifetime data plots 
+# Obtaining average lifetime data plots 
 lifetimes_av = np.mean(lifetimes, axis=0)
 plt.title('Average Lifetime of Droplets')
 plt.imshow(lifetimes_av)
 plt.show()
 
-# Periphery and centre average lifetime data
+# Periphery average lifetime data
 lifetimes_perph=lifetimes_av*periphery_image
 plt.imshow(lifetimes_perph,cmap = 'nipy_spectral')
 plt.title('Average Lifetime at Droplet Periphery at 125 mM NaCl')
@@ -153,7 +153,7 @@ plt.clim(0,1.74)
 plt.colorbar(label = 'Average Lifetime (ns)')
 plt.show()
 
-
+# Centre average lifetime data
 lifetimes_centre=lifetimes_av*centre_image
 plt.imshow(lifetimes_centre,cmap = 'nipy_spectral')
 plt.title('Average Lifetime at Droplet Centre at 125 mM NaCl')
@@ -161,7 +161,7 @@ plt.clim(0,1.74)
 plt.colorbar(label = 'Average Lifetime (ns)')
 plt.show()
 
-
+# Plotting the periphery lifetime across the wavelength range
 thresholded_perph_lifetimes=periphery_image*lifetimes
 perph_lifetime_wl=[]
 wl=[]
@@ -181,7 +181,10 @@ plt.ylabel('Lifetime (ns)')
 plt.title('Lifetime vs Wavelength Plot')
 plt.grid(color = 'r', linestyle = '--', linewidth = 0.2)
 plt.xlim([460, 720])
+plt.ylim(0,2.0)
+plt.legend()
 
+# Plotting the centre lifetime across the wavelength range
 thresholded_centre_lifetimes=centre_image*lifetimes
 centre_lifetime_wl=[]
 wl=[]
@@ -203,6 +206,6 @@ plt.grid(color = 'r', linestyle = '--', linewidth = 0.2)
 plt.xlim([460, 710])
 plt.ylim(0,2.0)
 plt.legend()
-#plt.savefig(path+name+'Mean Droplet Lifetime vs Wavelength .tif')
+plt.savefig(path+name+'Mean Droplet Lifetime vs Wavelength .tif')
 plt.show()
 

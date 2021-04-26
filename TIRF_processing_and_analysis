@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Mar 30 10:48:32 2021
+
+@author: aimeebryce
+"""
+
+import matplotlib.pyplot as plt
+from skimage import filters, measure, io
+import pandas as pd
+import numpy as np
+import os
+from skimage.filters import threshold_otsu
+from scipy import ndimage
+
+
+#  Path to the images that will be analysed. 
+path=r"/Volumes/aimee_hd/UBQLN2_TIRF_imaging_LLPS/final/time_changes/60_mins/"   
+path_2=r"/Volumes/aimee_hd/UBQLN2_TIRF_imaging_LLPS/final/time_changes/"
+
+# Code will run on all files that have this in the name
+# Filename and name are altered depending on the condition being looked at
+filename_contains="60"
+
+name = '60 min'
+
+# Function to load images:
+def load_image(toload):
+
+   image=io.imread(toload)
+
+   imagerange=image[1:10,:,:]
+   
+   average=np.mean(imagerange,axis=0)
+
+   return average
+
+# Threshold image using otsu method and output the filtered image along with the threshold value applied:
+
+def threshold_image_otsu(input_image):
+   threshold_value=filters.threshold_otsu(input_image)    
+   binary_image=input_image>threshold_value
+
+   return threshold_value,binary_image
+
+
+# Label and count the features in the thresholded image:
+def label_image(input_image):
+   labelled_image=measure.label(input_image)
+   number_of_features=labelled_image.max()
+
+   return number_of_features,labelled_image
+
+
+# Take a labelled image and the original image and measure intensities, sizes etc.
+def analyse_labelled_image(labelled_image,original_image):
+   measure_image=measure.regionprops_table(labelled_image,intensity_image=original_image,properties=('area','perimeter','centroid','orientation','major_axis_length','minor_axis_length','mean_intensity','max_intensity'))
+   measure_dataframe=pd.DataFrame.from_dict(measure_image)
+   return measure_dataframe
+
+
+
+
+# Store all results here/
+table=pd.DataFrame()
+
+
+# For loop to go throughh all of the images:
+for root, dirs, files in os.walk(path):
+    num=0
+    for name in files:
+        if filename_contains in name:
+            
+             print(name)
+            
+             path_file = os.path.join(root,name)
+             # From imaging 
+             image=load_image(path_file)
+             plt.imshow(image, cmap = 'gray')
+             plt.title('Original Image stack')
+             plt.show()
+             
+             
+             # filtering 
+             # gaussian (smoothing, general noise reduction)
+             # amount of blurring changed by changing values of sigma 
+             blurred_image = ndimage.gaussian_filter(image, sigma=40)
+             plt.imshow(blurred_image)
+             plt.title('Blurred Image')
+             plt.show()
+             
+             
+             # Gaussian subtraction = helps with uneven illumination 
+             # original image - gaussian filter  = subtracted image
+             bgrd_sub = (image - blurred_image)
+             plt.imshow(bgrd_sub)
+             plt.title("Image after Gaussian subtraction")
+             #plt.savefig(path + name + 'Filtered Image.tif')
+             plt.show()
+             
+         
+             ## Thresholding using otsu
+             
+             threshold=filters.threshold_otsu(bgrd_sub)
+             filtered = bgrd_sub > threshold    # Apply the threshold to the image. 
+             plt.imshow(filtered)
+             plt.show()
+          
+            # Displays binary image after Ostu thresholding 
+             label_image = measure.label(region_filtered)
+             plt.imshow(label_image)
+             plt.title('Binary Image (Otsu Threshold)')
+             #plt.savefig(path + name + 'Binary Image After Otsu.tif')
+             plt.colorbar()
+             plt.show()
+             
+             
+             table=pd.DataFrame()
+             # we can then analyse objects 
+             resultsdict=measure.regionprops_table(label_image,intensity_image=image, properties = ('area',
+                                                                                                    'centroid',
+                                                                                                    'major_axis_length',
+                                                                                                    'minor_axis_length',
+                                                                                                    'mean_intensity',
+                                                                                                    'max_intensity'))
+             
+             
+             results=pd.DataFrame.from_dict(resultsdict)
+             table=pd.concat([table,results])
+             df = pd.DataFrame(table)
+             print(df)
+             # Correct properties from pixels to μm2/μm
+             df['area'] = (df['area'])*(0.103**2) 
+             df['centroid-0']=(df['centroid-0'])*(0.103) 
+             df['major_axis_length']=(df['major_axis_length'])*(0.103)
+             df['minor_axis_length']=(df['minor_axis_length'])*(0.103)
+             df['mean_intensity']=(df['mean_intensity'])
+             df['max_intensity']=(df['max_intensity'])
+             df1 = df
+             print(df1)
+             # Saves dataframe to csv file to be opened in excel 
+             df.to_csv(path+'/tables/'+ name +'_table_of_data.csv',sep = ',',index = False,header=True)
+            
+             
+             
+             # obtaining mean values 
+             major_length_mean = df1["major_axis_length"].mean()
+             minor_length_mean = df1["minor_axis_length"].mean()
+             print(major_length_mean, minor_length_mean)
+             print(major_length_mean//minor_length_mean)
+             
+             mean_area = df1["area"].mean()
+             mean_length = df1["major_axis_length"].mean()
+             mean_intensity = df1["mean_intensity"].mean()
+             
+             # Now to analyse some of the features.
+             labelled_image=measure.label(filtered)
+             number_of_clusters=labelled_image.max()
+             print(number_of_clusters)
+             
+             
+             table_2 = ([mean_area, mean_length, mean_intensity, number_of_clusters, major_length_mean, minor_length_mean])
+             table_2_list = list(table_2)
+             print(table_2_list)
+             
+             # saves 2nd csv file with the mean area, intensity and max intensity and circularity 
+             df2 = pd.DataFrame([table_2_list], columns = ['mean_area', 'mean_length', 'mean_intensity', 'number_of_clusters', 'mean major axis length', 'mean minor axis length'])
+             
+             
+             df2.to_csv(path +'/mean_tables/'+ name + '_area_lengths_and_intensities_circularity.csv', sep=',', index=False, header=True)
+             
+             
+             areas = list(df1.area)
+             lengths = list(df1.major_axis_length)
+             intensities = list(df1.mean_intensity)
+             
+             # Plotting histograms - these were not displayed in the thesis but were plotted for immediate visualisation. 
+             plt.hist(areas, bins = 50, rwidth=0.8,color='#607c8e') 
+             plt.xlabel('Area ($μm^2$)')
+             plt.ylabel('Number of Features')
+             plt.xlim([0,120])
+             plt.title('Area of features '+ name)
+             plt.savefig(path+'+ name +'Areas.tif') #this line saves the histogram image as a pdf in the folder the image was taken from. 
+             plt.show()
+           
+             plt.hist(lengths, bins = 50, rwidth=0.8,color='#607c8e') 
+             plt.xlabel('Length (μm)')
+             plt.ylabel('Number of Features')
+             plt.xlim([0,40])
+             plt.title('Length '+ name)
+             plt.savefig(path+'/Lengths/'+ name + 'Lengths.tif')
+             plt.show()
+           
+             plt.hist(intensities, bins = 50,rwidth=0.8,color='#607c8e') 
+             plt.xlabel('Mean Intensities')
+             plt.ylabel('Number of Features')
+             plt.xlim([0,50000])
+             plt.title('Intensity '+ name)
+             plt.savefig(path+'/Intensities/'+ name + 'Intensities.tif')
+             plt.show()
+             
+             fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10,5), constrained_layout=True) #constrained layout helps prevent overlap
+             axes[0].hist(areas, bins = 50,range=[0,200], rwidth=0.8,color='#607c8e')
+             axes[1].hist(lengths, bins = 50,range=[0,20], rwidth=0.8,color='#607c8e')
+             axes[0].set_title("Mean Area of Droplets "+name) 
+             axes[0].set_xlabel('Area ($μm^2$)')
+             axes[0].set_ylabel('Number of Features')
+             axes[1].set_title("Mean Length of Droplets")
+             axes[1].set_xlabel('Length (μm)')
+             axes[1].set_ylabel('Number of Features')
+             plt.savefig(path + '/histograms/' + name + '_area_and_lengths_of_droplets.tif')
+             plt.show()
+             
+             

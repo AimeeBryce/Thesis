@@ -1,0 +1,329 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr 27 12:15:18 2021
+
+@author: aimeebryce
+"""
+import scipy.io as sio
+import numpy as np
+from skimage.io import imread
+from skimage import filters,measure
+import matplotlib.pyplot as plt
+from scipy.spatial import distance
+from scipy import ndimage
+from scipy.stats import norm
+from scipy.optimize import curve_fit
+
+# Read the files 
+
+mat_fname=r"/Volumes/aimee_hd/FS_FLIM_imaging/salt_conc/salt_conc_change/50nM_NR_500mM_salt_1/Lifetime_Data/LifetimeImageData.mat"
+mat_contents = sio.loadmat(mat_fname,squeeze_me=True)
+lifetimes=mat_contents['lifetimeImageData']
+mat_fname="/Volumes/aimee_hd/FS_FLIM_imaging/salt_conc/salt_conc_change/50nM_NR_500mM_salt_1/Lifetime_Data/LifetimeAlphaData.mat"
+mat_contents2 = sio.loadmat(mat_fname,squeeze_me=True)
+intensities=mat_contents2['lifetimeAlphaData']
+
+# This is path for where all the files and images will save to 
+
+path = '/Volumes/aimee_hd/FS_FLIM_imaging/salt_conc/salt_conc_change/'
+name = '500 mM_salt_1'
+
+def see(number):
+    plane=lifetimes[number]
+    plt.imshow(plane)
+
+# Plots sum of the FL intensity over pixels
+sum_int=np.sum(intensities[1:512],axis=0)
+plt.imshow(sum_int, cmap = 'nipy_spectral')
+plt.clim(0, 5e6)
+plt.colorbar()
+plt.title('Summed Intensity Plot at 500mM salt')
+plt.show()
+
+# Correcting for uneven illumination using Gaussian filter
+blurred_image = ndimage.gaussian_filter(sum_int, sigma=40)
+plt.imshow(blurred_image)
+plt.title('Blurred Image')
+
+bgrd_sub = (sum_int - blurred_image)
+plt.imshow(bgrd_sub)
+plt.title("Gaussian Corrected Image")
+plt.show()
+
+#Thresholding using mean threshold method
+thresh_selected=filters.threshold_mean(bgrd_sub)
+binary_im=bgrd_sub>thresh_selected
+plt.imshow(binary_im)
+plt.title('Binary Image Plot')
+plt.show()
+
+# Obtains intensity / lifetime for droplets through use of binary image 
+thresholded_intensities=binary_im*intensities
+thresholded_lifetimes=binary_im*lifetimes
+
+
+# Convert from pixel to wavelength- these are taken from the fits to the TetraSpeck Bead Data. 
+m=0.5
+c=460 
+
+# This finds the wavelength at which the lifetime is highest.
+max_life=(np.argmax(thresholded_lifetimes,axis=0)*m+c)*binary_im
+plt.imshow(max_life,cmap='rainbow',vmin=0,vmax=800)
+plt.colorbar()
+plt.title('Maximum Wavelength of Droplets in Each Pixel Plot')
+plt.savefig(path+name+' Edited Max Wavelength of Droplets in Each Pixel Plot.tif')
+plt.show()
+
+
+
+# Now to analyse some of the features.
+labelled_image=measure.label(binary_im)
+number_of_clusters=labelled_image.max()
+print(number_of_clusters) #this will give the number of droplets after threshold
+
+
+# Make the arrays for the periphery (i.e. outer edges) vs. centre. 
+# np.zeros fills any given shape with array of 0's - hence for periphery then inside will now = 0
+periphery_image=np.zeros(labelled_image.shape)
+centre_image=np.zeros(labelled_image.shape)
+
+# Perform stats on the image:
+measure_image=measure.regionprops_table(labelled_image,properties=('area','perimeter','centroid','orientation','major_axis_length','minor_axis_length'))
+xcoord=measure_image["centroid-0"]
+ycoord=measure_image["centroid-1"]
+lengths=measure_image["major_axis_length"]  
+
+# Go through each of clusters.
+for num in range(1,number_of_clusters):
+
+    
+    distance_image=np.zeros(labelled_image.shape) 
+   
+    # Select only the one droplet
+    image_to_show=labelled_image==num
+
+    # Make an image with just coordinates 
+    wid=image_to_show.shape
+    x = np.linspace(0, wid[0],wid[0])
+    y = np.linspace(0, wid[1],wid[1])
+
+    xv, yv = np.meshgrid(x, y)
+
+    # Calculate the distances from the centre to each point in the droplet using the coordinate system. 
+    image_dist=((yv-xcoord[num-1])**2+(xv-ycoord[num-1])**2)**(0.5)
+    image_dist_clust=image_dist*image_to_show
+
+
+    
+    # This is the threshold that determines whether the pixel is in the periphery or the centre. 
+    length=0.80*(lengths[num-1]/2)
+
+    # Now make the image
+    image_periphery=(image_dist_clust>length)*image_to_show
+    image_centre=(image_dist_clust<=length)*image_to_show
+
+    # Add to overall images that contain all of the clusters. 
+    periphery_image=periphery_image+image_periphery
+    centre_image=centre_image+image_centre
+
+# Show the plots. 
+fig, axes = plt.subplots(nrows=1, ncols=2)
+axes[0].imshow(periphery_image)
+axes[0].set_title("Periphery")  
+axes[1].imshow(centre_image)
+axes[1].set_title("Centre")
+plt.show()
+
+
+#Obtaining average lifetime data plots 
+lifetimes_av = np.mean(lifetimes, axis=0)
+plt.title('Average Lifetime of Droplets')
+plt.imshow(lifetimes_av, cmap = 'nipy_spectral')
+plt.clim(1,2)
+plt.colorbar(label = 'Average Lifetime (ns)')
+plt.show()
+
+lifetimes_av_fl=lifetimes_av.flatten()
+lifetimes_av_fl[lifetimes_av_fl==0]=['nan']
+plt.hist(lifetimes_av_fl, bins=40, range=[1,2],rwidth=0.9,color='green')
+plt.ylim(0,4500)
+plt.title("Average Lifetime of Droplets at 500 mM NaCl")
+plt.xlabel('Lifetime (ns)')
+plt.ylabel('Number of Pixels')
+plt.show()
+
+
+# Periphery and centre average lifetime data
+lifetimes_perph=lifetimes_av*periphery_image
+plt.imshow(lifetimes_perph,cmap = 'nipy_spectral')
+plt.title('Average Lifetime at Droplet Periphery at 500 mM NaCl')
+plt.clim(0,1.74)
+plt.colorbar(label = 'Average Lifetime (ns)')
+plt.show()
+
+
+lifetimes_centre=lifetimes_av*centre_image
+plt.imshow(lifetimes_centre,cmap = 'nipy_spectral')
+plt.title('Average Lifetime at Droplet Centre at 500 mM NaCl')
+plt.clim(0,1.74)
+plt.colorbar(label = 'Average Lifetime (ns)')
+plt.show()
+
+# Intensity vs Wavelength Plot 
+intensities_only_thresh=intensities*binary_im
+intensity_wl=[]
+wl=[]
+for i in range(0,512):
+    wavelength_val=i*m+c
+    plane=intensities_only_thresh[i]
+    plane_list=plane.flatten()
+    values_only=plane_list[plane_list>0]
+    intensity_mean=values_only.mean()
+    
+    intensity_wl.append(intensity_mean)
+    wl.append(wavelength_val)
+    
+    
+plt.plot(wl,intensity_wl, color='black')
+plt.xlabel('Wavelength (nm)')
+plt.ylabel('Intensity')
+plt.title('Intensity vs Wavelength Plot at 500 mM Salt')
+plt.grid(color = 'r', linestyle = '--', linewidth = 0.2)
+plt.fill_between(wl, intensity_wl, color='peachpuff')
+plt.xlim([460, 720])
+plt.ylim([0, 7500])
+plt.savefig(path+name+'Mean Droplet Intensity vs Wavelength .tif')
+plt.show()
+
+# Lifetime vs wavelength plot at periphery and centre 
+thresholded_perph_lifetimes=periphery_image*lifetimes
+perph_lifetime_wl=[]
+wl=[]
+for i in range(1,512):
+    wavelength_val=i*m+c
+    plane=thresholded_perph_lifetimes[i]
+    plane_list=plane.flatten()
+    values_only=plane_list[plane_list>0]
+    lifetime_mean=values_only.mean()
+    perph_lifetime_wl.append(lifetime_mean)
+    wl.append(wavelength_val)
+
+    
+plt.plot(wl,perph_lifetime_wl, color='blue', label = 'periphery')
+plt.xlabel('Wavelength (nm)')
+plt.ylabel('Lifetime (ns)')
+plt.title('Lifetime vs Wavelength Plot')
+plt.grid(color = 'r', linestyle = '--', linewidth = 0.2)
+plt.xlim([460, 720])
+
+thresholded_centre_lifetimes=centre_image*lifetimes
+centre_lifetime_wl=[]
+wl=[]
+for i in range(1,512):
+    wavelength_val=i*m+c
+    plane=thresholded_centre_lifetimes[i]
+    plane_list=plane.flatten()
+    values_only=plane_list[plane_list>0]
+    lifetime_mean=values_only.mean()
+    centre_lifetime_wl.append(lifetime_mean)
+    wl.append(wavelength_val)
+
+    
+plt.plot(wl,centre_lifetime_wl, color='red', label = 'centre')
+plt.xlabel('Wavelength (nm)')
+plt.ylabel('Lifetime (ns) at Periphery')
+plt.title('Lifetime vs Wavelength Plot at 500 mM NaCl')
+plt.grid(color = 'r', linestyle = '--', linewidth = 0.2)
+plt.xlim([460, 710])
+plt.ylim(0,2.0)
+plt.legend()
+plt.savefig(path+name+'Mean Droplet Lifetime vs Wavelength .tif')
+plt.show()
+
+
+
+
+#  Histograms of lifetime at periphery / centre vs number of pixels     
+lifetimes_perph_all=lifetimes_perph.flatten()
+lifetimes_perph_all[lifetimes_perph_all==0]=['nan']
+
+lifetimes_centre_all=lifetimes_centre.flatten()
+lifetimes_centre_all[lifetimes_centre_all==0]=['nan']
+
+
+# This plots wavelength at periphery / centre vs number of pixels 
+fig, axes = plt.subplots(nrows=1, ncols=2, constrained_layout=True) #constrained layout helps prevent overlap
+axes[0].hist(lifetimes_perph_all, bins = 20,range=[1,2], rwidth=0.9,color='#0000ff')
+axes[1].hist(lifetimes_centre_all, bins = 20,range=[1,2], rwidth=0.9,color='#ff0000')
+axes[0].set_title("Periphery at 500 mM NaCl") 
+axes[0].set_xlabel('Lifetime (ns)')
+axes[0].set_ylabel('Number of Pixels')
+axes[0].set_ylim(0,4500)
+axes[1].set_title("Centre at 500 mM NaCl")
+axes[1].set_xlabel('Lifetime (ns)')
+axes[1].set_ylabel('Number of Pixels ')
+axes[1].set_ylim(0,4500)
+plt.savefig(path+name+' Lifetime vs Wavelength - Periphery and Edges.tif')
+plt.show()
+
+# This finds the wavelength at which the lifetime is highest.
+thresholded_intensity=binary_im*intensities
+m=0.5
+c=460 
+max_int=(np.argmax(thresholded_intensity,axis=0)*m+c)*binary_im
+
+# Plotting Wavelength over droplets 
+plt.imshow(max_int, cmap = 'nipy_spectral')
+plt.title('Emission Wavelength of Droplets')
+plt.clim(400,720)
+plt.colorbar(label = 'Wavelength (nm)')
+plt.show()
+
+max_int_fl=max_int.flatten()
+max_int_fl[max_int_fl==0]=['nan']
+plt.hist(max_int_fl, bins=40, range=[480,550],rwidth=0.9,color='green')
+plt.ylim(0,4500)
+plt.title("Emission Wavelength of Droplets at 500 mM NaCl")
+plt.xlabel('Wavelength (nm)')
+plt.ylabel('Number of Pixels')
+plt.show()
+
+
+# Plot of maximum wavelength across periphery of droplets
+periphery_image_wl=periphery_image*max_int
+plt.imshow(periphery_image_wl,cmap = 'nipy_spectral')
+plt.title('Wavelength at Droplet Periphery at 500 mM NaCl')
+plt.clim(460,550)
+plt.colorbar(label = 'Wavelength (nm)')
+plt.show()
+
+# Plot of maximum wavelength across centre of droplets
+centre_image_wl=centre_image*max_int
+plt.imshow(centre_image_wl,cmap = 'nipy_spectral')
+plt.title('Wavelength at Droplet Centre at 500 mM NaCl')
+plt.clim(460,550)
+plt.colorbar(label = 'Wavelength (nm)')
+plt.show()
+
+
+# Flattening data to allow for histogram plotting
+periph=periphery_image_wl.flatten()
+cents=centre_image_wl.flatten()
+# Make histograms for periphery and centres at wavelength 
+ 
+
+# This plots lifetime at periphery / centre vs number of pixels 
+fig, axes = plt.subplots(nrows=1, ncols=2, constrained_layout=True) #constrained layout helps prevent overlap
+axes[0].hist(periph, bins = 40,range=[480,550], rwidth=0.9,color='#0000ff')
+axes[1].hist(cents, bins = 40,range=[480,550], rwidth=0.9,color='#ff0000')
+axes[0].set_title("Periphery at 500 mM NaCl") 
+axes[0].set_xlabel('Wavelength (nm)')
+axes[0].set_ylabel('Number of Pixels')
+axes[0].set_ylim(0,3000)
+axes[1].set_title("Centre at 500 mM NaCl")
+axes[1].set_xlabel('Wavelength (nm)')
+axes[1].set_ylabel('Number of Pixels ')
+axes[1].set_ylim(0,3000)
+plt.savefig(path+name+' Lifetime vs Wavelength - Periphery and Edges.tif')
+plt.show()
